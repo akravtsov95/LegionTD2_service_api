@@ -2,9 +2,11 @@ from fastapi import APIRouter, Query, Request
 from pydantic import BaseModel, Field
 
 from app.clients.httpbin_client import HttpBinClient
+from app.services.PlayerService import PlayerService
 
 router = APIRouter(prefix="/v1", tags=["v1"])
 httpbin_client = HttpBinClient()
+player_service = PlayerService()
 
 class PlayerResolveResponse(BaseModel):
     player_id: str = Field(..., description="Player ID")
@@ -12,8 +14,9 @@ class PlayerResolveResponse(BaseModel):
 
 
 @router.get("/players/resolve", response_model=PlayerResolveResponse)
-async def resolve_player(nickname: str = Query(..., min_length=2, max_length=32)) -> PlayerResolveResponse:
-    return PlayerResolveResponse(player_id=f"stub-{nickname.lower()}", nickname=nickname)
+async def resolve_player(request: Request, nickname: str = Query(..., min_length=2, max_length=32)):
+    data = await player_service.resolve(request.app.state.http, nickname)
+    return PlayerResolveResponse(**data)
 
 
 @router.get("/debug/ip")
